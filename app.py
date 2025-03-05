@@ -30,10 +30,36 @@ st.markdown("""
             background-color: white !important;
             border-radius: 5px !important;
         }
+
+        /* Centering LinkedIn elements */
+        .linkedin-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown("<h1 class='section-title'>Black-Scholes Pricing Model</h1>", unsafe_allow_html=True)
+
+# ---- LinkedIn Integration ----
+st.subheader("👥 Connect with Me")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("""
+        <a href="https://www.linkedin.com/in/astelnixon/" target="_blank">
+            <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" width="40" height="40">
+        </a>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown("[🔗 Connect with me on LinkedIn](https://www.linkedin.com/in/astelnixon/)")
+
+with col3:
+    linkedin_share_url = "https://www.linkedin.com/shareArticle?mini=true&url=https://your-app-link.streamlit.app/"
+    st.markdown(f"[📢 Share this App on LinkedIn](<{linkedin_share_url}>)", unsafe_allow_html=True)
 
 # ---- Fetch Live Top Gainers ----
 def get_live_top_gainers():
@@ -51,7 +77,6 @@ def get_live_top_gainers():
 
 # Display Live Top Stocks
 st.subheader("🔥 Live Top 4 Stocks of the Week")
-
 top_stocks = get_live_top_gainers()
 col1, col2, col3, col4 = st.columns(4)
 
@@ -126,19 +151,3 @@ with col2:
     ))
     fig.update_layout(title="Put Price Heatmap", xaxis_title="Spot Price", yaxis_title="Volatility")
     st.plotly_chart(fig)
-
-# ---- Profit/Loss Simulation ----
-st.subheader("📈 Profit/Loss Simulation")
-stock_range = np.linspace(S * 0.5, S * 1.5, 100)
-call_payoff = np.maximum(stock_range - K, 0)
-put_payoff = np.maximum(K - stock_range, 0)
-fig, ax = plt.subplots()
-ax.plot(stock_range, call_payoff, label="Call Option", color="green")
-ax.plot(stock_range, put_payoff, label="Put Option", color="red")
-ax.axhline(0, color='black', linestyle='--')
-ax.set_title("Option Profit/Loss at Expiration")
-ax.set_xlabel("Stock Price at Expiration")
-ax.set_ylabel("Profit/Loss")
-ax.legend()
-st.pyplot(fig)
-

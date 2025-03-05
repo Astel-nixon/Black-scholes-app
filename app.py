@@ -151,3 +151,7 @@ with col2:
     ))
     fig.update_layout(title="Put Price Heatmap", xaxis_title="Spot Price", yaxis_title="Volatility")
     st.plotly_chart(fig)
+
+
+
+    

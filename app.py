@@ -3,7 +3,7 @@ import yfinance as yf
 import numpy as np
 import plotly.graph_objects as go
 from black_scholes import black_scholes_call, black_scholes_put, black_scholes_greeks
-from monte_carlo import monte_carlo_call
+from monte_carlo import monte_carlo_call, monte_carlo_simulation
 from binomial_tree import binomial_tree_call
 import requests
 import matplotlib.pyplot as plt
@@ -33,44 +33,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='section-title'>Black-Scholes Pricing Model</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='section-title'>Option Pricing Models</h1>", unsafe_allow_html=True)
 
-# ---- LinkedIn Connect ----
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🔗 Connect with me on LinkedIn")
-st.sidebar.markdown(
-    '<a href="https://www.linkedin.com/in/astelnixon/" target="_blank">'
-    '<button style="background-color:#0077B5; color:white; width:100%; padding:10px; border:none; border-radius:5px; font-size:16px;">'
-    'Connect on LinkedIn</button></a>', 
-    unsafe_allow_html=True
-)
-
-# ---- Fetch Live Top Gainers ----
-def get_live_top_gainers():
-    url = "https://query1.finance.yahoo.com/v7/finance/spark?symbols=AAPL,MSFT,TSLA,NVDA,GOOGL,AMZN,META,BABA,AMD"
-    try:
-        response = requests.get(url).json()
-        stocks = []
-        for ticker, data in response['spark']['result'].items():
-            if 'response' in data and data['response']:
-                latest_price = data['response'][0]['meta']['regularMarketPrice']
-                stocks.append((ticker, latest_price))
-        return sorted(stocks, key=lambda x: x[1], reverse=True)[:4]  # Top 4 gainers
-    except:
-        return [("AAPL", 170), ("MSFT", 350), ("TSLA", 180), ("NVDA", 450)]  # Default values
-
-# Display Live Top Stocks
-st.subheader("🔥 Live Top 4 Stocks of the Week (Updating Every 5 Secs)")
-
-top_stocks = get_live_top_gainers()
-col1, col2, col3, col4 = st.columns(4)
-
-for i, (stock, price) in enumerate(top_stocks):
-    with [col1, col2, col3, col4][i]:
-        st.metric(label=f"📈 {stock}", value=f"${price:.2f}")
-
-time.sleep(5)  # Update every 5 seconds
-st.rerun()  # Refresh the app to update the stock prices
+# ---- LinkedIn Connect Button ----
+st.sidebar.markdown("## 🤝 Connect with me on LinkedIn")
+st.sidebar.markdown("""
+[![Connect on LinkedIn](https://img.shields.io/badge/Connect%20on%20LinkedIn-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/astelnixon/)
+""", unsafe_allow_html=True)
 
 # ---- Sidebar Inputs ----
 st.sidebar.header("🔢 Input Parameters")
@@ -96,13 +65,33 @@ sigma_percent = st.sidebar.slider("Volatility (%)", min_value=5.0, max_value=100
 r = r_percent / 100  # Convert to decimal
 sigma = sigma_percent / 100  # Convert to decimal
 
-# ---- Interactive Heatmaps for Call and Put Prices ----
+# ---- Compute Option Prices Using Different Models ----
+st.subheader("📈 Option Pricing Results")
+
+binomial_price = binomial_tree_call(S, K, T, r, sigma)
+monte_carlo_price = monte_carlo_call(S, K, T, r, sigma)
+black_scholes_call_price = black_scholes_call(S, K, T, r, sigma)
+black_scholes_put_price = black_scholes_put(S, K, T, r, sigma)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric(label="📊 Black-Scholes Call Price", value=f"${black_scholes_call_price:.2f}")
+    st.metric(label="📊 Black-Scholes Put Price", value=f"${black_scholes_put_price:.2f}")
+
+with col2:
+    st.metric(label="📊 Binomial Tree Call Price", value=f"${binomial_price:.2f}")
+
+with col3:
+    st.metric(label="📊 Monte Carlo Call Price", value=f"${monte_carlo_price:.2f}")
+
+# ---- Interactive Heatmaps for Call and Put Prices (Only One Instance) ----
 st.subheader("📊 Call & Put Price Heatmaps")
 
 min_spot = st.sidebar.number_input("Min Spot Price", value=80.0, key="min_spot")
 max_spot = st.sidebar.number_input("Max Spot Price", value=120.0, key="max_spot")
-min_volatility = st.sidebar.slider("Min Volatility for Heatmap", 0.01, 1.00, 0.10)
-max_volatility = st.sidebar.slider("Max Volatility for Heatmap", 0.01, 1.00, 0.30)
+min_volatility = st.sidebar.slider("Min Volatility for Heatmap", 0.01, 1.00, 0.10, key="min_volatility")
+max_volatility = st.sidebar.slider("Max Volatility for Heatmap", 0.01, 1.00, 0.30, key="max_volatility")
 
 spot_prices = np.linspace(min_spot, max_spot, 10)
 volatilities = np.linspace(min_volatility, max_volatility, 10)
@@ -139,6 +128,23 @@ with col2:
     ))
     fig.update_layout(title="Put Price Heatmap", xaxis_title="Spot Price", yaxis_title="Volatility")
     st.plotly_chart(fig)
+
+# ---- Monte Carlo Simulation ----
+st.subheader("📊 Monte Carlo Stock Price Simulation")
+
+num_simulations = st.sidebar.slider("Number of Simulations", min_value=1000, max_value=50000, value=10000)
+num_steps = st.sidebar.slider("Time Steps", min_value=10, max_value=365, value=252)
+
+simulated_paths = monte_carlo_simulation(S, T, r, sigma, num_simulations=num_simulations, num_steps=num_steps)
+
+fig, ax = plt.subplots()
+for i in range(10):  # Plot only 10 sample paths for better visibility
+    ax.plot(simulated_paths[:, i], alpha=0.5)
+
+ax.set_title("Monte Carlo Simulated Stock Price Paths")
+ax.set_xlabel("Time Steps")
+ax.set_ylabel("Stock Price")
+st.pyplot(fig)
 
 # ---- Profit/Loss Simulation ----
 st.subheader("📈 Profit/Loss Simulation")
